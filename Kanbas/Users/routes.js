@@ -3,34 +3,32 @@ import * as courseDao from "../Courses/dao.js";
 import * as enrollmentsDao from "../Enrollments/dao.js";
 
 export default function UserRoutes(app) {
+     /* Currently UNUSED functions/routes. */
     const createUser = (req, res) => { };
     const deleteUser = (req, res) => { };
     const findAllUsers = (req, res) => { };
     const findUserById = (req, res) => { };
+    app.post("/api/users", createUser);
+    app.get("/api/users", findAllUsers);
+    app.get("/api/users/:userId", findUserById);
+    app.delete("/api/users/:userId", deleteUser);
+    
+    /* API route to update user info. PUT type (for modifying). 
+    Recieves a REQ object - an HTTP package sent from the client.
+    Unpackages that into body and params variables. */
     const updateUser = async (req, res) => {
         try {
-            console.log("Received request to update user");
-            console.log("User ID:", req.params.userId);
+            console.log("Received request to update user. User ID:", req.params.userId);
             console.log("User Updates:", req.body);
-
             const userId = req.params.userId;
             const userUpdates = req.body;
 
-            // Log before calling dao.updateUser
-            console.log("Calling dao.updateUser with:", userId, userUpdates);
+            /* call dao.updateUser function to handle the interaction with the 'database', so this line updates the 'database' */
             await dao.updateUser(userId, userUpdates);
-            console.log("User updated successfully in DAO");
 
-            // Log before fetching the updated user
-            console.log("Fetching updated user from DAO");
+            /* define a new currentUser variable and set it to the currentUser */
             const currentUser = await dao.findUserById(userId);
-            console.log("Fetched updated user:", currentUser);
-
-            // Log before setting session data
-            console.log("Updating session with currentUser:", currentUser);
             req.session["currentUser"] = currentUser;
-
-            // Log before sending the response
             console.log("Sending response with updated user data");
             res.json(currentUser);
         } catch (error) {
@@ -38,6 +36,10 @@ export default function UserRoutes(app) {
             res.status(500).json({ message: "Error updating user" });
         }
     };
+    app.put("/api/users/:userId", updateUser);
+
+
+     /* API route to signup a user and send back the new user. */
     const signup = (req, res) => {
         const user = dao.findUserByUsername(req.body.username);
         if (user) {
@@ -47,9 +49,14 @@ export default function UserRoutes(app) {
         }
         const currentUser = dao.createUser(req.body);
         req.session["currentUser"] = currentUser;
-
+        res.json(currentUser);
     };
+    app.post("/api/users/signup", signup);
+
+
+    /* API route to signin a user and send back the signed in user. */
     const signin = (req, res) => {
+        console.log("Received request to login user:", req.body.username, req.body.password);
         const { username, password } = req.body;
         const currentUser = dao.findUserByCredentials(username, password);
         if (currentUser) {
@@ -58,14 +65,20 @@ export default function UserRoutes(app) {
         } else {
             res.status(401).json({ message: "Unable to login. Try again later." });
         }
-
     };
+    app.post("/api/users/signin", signin);
+
+    /* API route to sign out a user and send back a confirmation status. Pretty much just destroys the session (?) */
     const signout = (req, res) => {
         req.session.destroy();
         res.sendStatus(200);
     };
+    app.post("/api/users/signout", signout);
 
+
+    /* API route simply send the currentUser object sored in session */
     const profile = async (req, res) => {
+        console.log('Session:', req.session)
         const currentUser = req.session["currentUser"];
         if (!currentUser) {
             res.sendStatus(401);
@@ -73,7 +86,9 @@ export default function UserRoutes(app) {
         }
         res.json(currentUser);
     };
+    app.post("/api/users/profile", profile);
 
+    /* API route first check to see if the user is logged into the current session. If they are, send back the courses they are enrolled in. */
     const findCoursesForEnrolledUser = (req, res) => {
         let { userId } = req.params;
         if (userId === "current") {
@@ -95,6 +110,7 @@ export default function UserRoutes(app) {
         enrollmentsDao.enrollUserInCourse(currentUser._id, newCourse._id);
         res.json(newCourse);
     };
+    app.post("/api/users/current/courses", createCourse);
     
     const enrollUser = (req,res) => {
         const currentUser = req.session["currentUser"];
@@ -110,19 +126,7 @@ export default function UserRoutes(app) {
         enrollmentsDao.unenrollUserInCourse(currentUser._id, unenrollCourseID);
         res.sendStatus(200);
     }
-    app.post("/api/users/current/unenroll", unenrollUser)
-
-
-    app.post("/api/users", createUser);
-    app.get("/api/users", findAllUsers);
-    app.get("/api/users/:userId", findUserById);
-    app.put("/api/users/:userId", updateUser);
-    app.delete("/api/users/:userId", deleteUser);
-    app.post("/api/users/signup", signup);
-    app.post("/api/users/signin", signin);
-    app.post("/api/users/signout", signout);
-    app.post("/api/users/profile", profile);
-    app.post("/api/users/current/courses", createCourse);
+    app.post("/api/users/current/unenroll", unenrollUser)    
 }
 
 

@@ -4,8 +4,10 @@ export function findModulesForCourse(courseId) {
     return modules.filter((module) => module.course === courseId);
 }
 export function createModule(module) {
+    
     const newModule = { ...module, _id: Date.now().toString() };
     Database.modules = [...Database.modules, newModule];
+    console.log("added module: ", newModule._id)
     return newModule;
 }
 export function deleteModule(moduleId) {
@@ -13,6 +15,7 @@ export function deleteModule(moduleId) {
     Database.modules = modules.filter((module) => module._id !== moduleId);
 }
 export function updateModule(moduleId, moduleUpdates) {
+    console.log("updating module: ", moduleUpdates)
     const { modules } = Database;
     const module = modules.find((module) => module._id === moduleId);
     Object.assign(module, moduleUpdates);
