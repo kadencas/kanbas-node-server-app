@@ -22,6 +22,10 @@ app.use(
         origin: process.env.NETLIFY_URL || "http://localhost:3000",
     })
 );
+app.use((req, res, next) => {
+  console.log(`Incoming Request: ${req.method} ${req.url}`);
+  next();
+});
 const sessionOptions = {
     secret: process.env.SESSION_SECRET || "kanbas",
     resave: false,
