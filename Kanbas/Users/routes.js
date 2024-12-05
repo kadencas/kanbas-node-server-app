@@ -55,14 +55,25 @@ export default function UserRoutes(app) {
             /* call dao.updateUser function to handle the interaction with the 'database', so this line updates the 'database' */
             await dao.updateUser(userId, userUpdates);
 
-            /* define a new currentUser variable and set it to the currentUser */
+            /* 
+            OLD CODE, SENT STALE USER DATA BACK!!!!!! 
             const currentUser = req.session["currentUser"];
             if (currentUser && currentUser._id === userId) {
                 req.session["currentUser"] = { ...currentUser, ...userUpdates };
             }
+            */
 
-            console.log("Sending response with updated user data");
-            res.json(currentUser);
+            // NEW FIXED CODE:
+            // Retrieve the updated user from the database
+            const updatedUser = await dao.findUserById(userId);
+            // Update the session's currentUser if applicable
+            if (req.session["currentUser"] && req.session["currentUser"]._id === userId) {
+                req.session["currentUser"] = updatedUser;
+            }
+
+            console.log("Sending response with updated user data", updatedUser);
+            res.json(updatedUser);
+
         } catch (error) {
             console.error("Error in updateUser:", error);
             res.status(500).json({ message: "Error updating user" });
@@ -171,7 +182,7 @@ export default function UserRoutes(app) {
         if (uid === "current") {
             uid = currentUser._id;
         }
-        
+
         const courses = await enrollmentsDao.findCoursesForUser(uid);
         res.json(courses);
     };
